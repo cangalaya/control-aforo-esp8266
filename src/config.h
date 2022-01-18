@@ -1,6 +1,6 @@
-const char* ssid     = "WF_AFORO";        //WF_AFORO_SAM
-const char* password = "ss1d_4FoRo_T4s4";     //ss1d_4FoRo_T4s4
-const char* hostname = "COMEDOR-2";     // cambiar hostname
+const char* ssid     = "WF_P2_2";        //WF_AFORO_SAM
+const char* password = "R420437015R";     //ss1d_4FoRo_T4s4
+const char* hostname = "esp1";     // cambiar hostname
 
 IPAddress ip(192, 168, 1, 202);                   // Cambiar dirección IP
 IPAddress gateway(192, 168, 1, 1);
