@@ -84,6 +84,7 @@ FirebaseJson jsonData;
 
 
 
+////// SETEO INICIAL DE DATOS //////////7
 void jsonConfigDataSet()
 {
 
@@ -604,6 +605,8 @@ void setup()
   // device connected behind the Firewall that allows only GET and POST requests.
   Firebase.RTDB.enableClassicRequest(&fbdo, true);
 
+  /// ------ EPROM INIT ----
+  EEPROM.begin(512);
   jsonConfigDataSet();
   setCofigEprom ();
 }
@@ -692,7 +695,7 @@ void loop()
   //   Serial.println(integer);
   // }
 
-  if ((Firebase.ready() && (millis() - PrevMillis > 5000) || PrevMillis == 0))
+  if (((Firebase.ready() && (millis() - PrevMillis > 5000)) || PrevMillis == 0))
   {
     PrevMillis = millis();
   //   int integer = 0;
@@ -704,7 +707,7 @@ void loop()
     jsonData.set("total", BDatos.total);
     jsonData.set("ingresos", BDatos.ingresos);
     jsonData.set("egresos", BDatos.egresos);
-    Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, "/tasa/callao/bano-varones/data" + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
+    Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, path_data + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
 
     // int aforo_realtime = 0;
     // if (Firebase.RTDB.getInt(&fbdo, F("/tasa/callao/bano-varones/config/aforo/int")))
