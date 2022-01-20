@@ -12,8 +12,10 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h> // Protocolo UDP (transferencia de datos rapida, pero no segura)
 //#include <DMDESP.h>               // librería para el display
-#include <Separador.h>       // liberia para separa string (se usa para separar valores en la trama de datos de comunicación con el UDP)
-#include <FirebaseESP8266.h> // firebase
+#include <Separador.h>           // liberia para separa string (se usa para separar valores en la trama de datos de comunicación con el UDP)
+#include <Firebase_ESP_Client.h> //#include <Firebase_ESP_Client.h>
+#include <EEPROM.h>              // update de memorias fash
+#include <EEPROM.h>
 //#include <fonts/SystemFont5x7.h>  //liberias para la tipología de fuente a mostrar en pantalla
 //#include <fonts/Droid_Sans_12.h>
 //#include <fonts/Arial_Black_16.h>
@@ -39,11 +41,106 @@ int counter_minutos_inactividad = 0;
 //----------------------------------------
 Separador s; // instancia para separar string
 //----------------------------------------
+// Define Firebase Data object
+FirebaseData fbdo;
+
+FirebaseAuth auth;
+FirebaseConfig config;
+
+// creación de JSON
+FirebaseJson jsonConfigWifi;
+FirebaseJson jsonConfigUdp;
+FirebaseJson jsonConfigTarjet;
+FirebaseJson jsonData;
+
+
 
 #include "config.h" // Configurar datos de la red
 #include "UDP.hpp"
 #include "ESP8266_Utils.hpp"
 #include "ESP8266_Utils_UDP.hpp"
+
+//////////// variables FIREBASE   ////////////////
+
+// Provide the token generation process info.
+#include <addons/TokenHelper.h>
+
+// Provide the RTDB payload printing info and other helper functions.
+#include <addons/RTDBHelper.h>
+
+/* 2. Define the API Key */
+#define API_KEY "AIzaSyACwNdd8nTeRCLSr6tFyZLQ-jquw8ljKa8"
+
+/* 3. Define the RTDB URL */
+#define DATABASE_URL "prueba-2-e4543-default-rtdb.firebaseio.com" //<databaseName>.firebaseio.com or <databaseName>.<region>.firebasedatabase.app
+
+/* 3. Define the project ID */
+#define FIREBASE_PROJECT_ID "prueba-2-e4543"
+
+/* 4. Define the user Email and password that alreadey registerd or added in your project */
+#define USER_EMAIL "comedor1@tasa-callao.com"
+#define USER_PASSWORD "comedor1"
+
+
+
+
+void jsonConfigDataSet()
+{
+
+  // SETEO DE CONFIGURACIÓN DE TARJET
+  jsonConfigTarjet.add("abcd", "medium");
+  jsonConfigTarjet.add("aforo", random(1, 10));
+  jsonConfigTarjet.add("count-delay-milisegundos", random(1, 10));
+  jsonConfigTarjet.add("estado", "on");
+  jsonConfigTarjet.add("inactivity-hours-reset", 3);
+  jsonConfigTarjet.add("set-data-realtime-segundos", 30);
+
+  // SETEO DE CONFIGURACIÓN WIFI
+  jsonConfigWifi.add("hostname", "bano-varones");
+  jsonConfigWifi.add("ssid", "WF_P2_2");
+  jsonConfigWifi.add("password", "R420437015R");
+
+  // SETEO DE CONFIGURACIÓN UDP
+  jsonConfigUdp.add("master-port", 8890);
+  jsonConfigUdp.add("second-port", 8891);
+  jsonConfigUdp.add("datalogger-ip", 20);
+  jsonConfigUdp.add("datalogger-port", 8888);
+
+  // SETEO DE CONFIGURACIÓN DATA - REALTIME
+  jsonData.add("egresos", random(1, 10));
+  jsonData.add("excesos", random(1, 10));
+  jsonData.add("ingresos", random(1, 10));
+  jsonData.add("total", random(1, 10));
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/wifi", &jsonConfigWifi))
+  {
+    Serial.println("Datos WIFI Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos WIFI no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/tarjet", &jsonConfigTarjet))
+  {
+    Serial.println("Datos TARJET Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos TARJET no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/udp", &jsonConfigUdp))
+  {
+    Serial.println("Datos UDP Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos UDP no establecidos en Firebase");
+  }
+
+  Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/data", &jsonData) ? "ok" : fbdo.errorReason().c_str());
+}
 
 //////////// variables para reseteo por inactividad /////////////
 unsigned long time_millis = 0;
@@ -476,11 +573,45 @@ void setup()
   //--------------- CLOCK NTP SERVER ----------------
   setSyncProvider(getNtpTime);
   setSyncInterval(300);
+
+  // -------------- FIREBASE -------------------------
+  Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
+
+  /* Assign the api key (required) */
+  config.api_key = API_KEY;
+
+  /* Assign the user sign in credentials */
+  auth.user.email = USER_EMAIL;
+  auth.user.password = USER_PASSWORD;
+
+  /* Assign the RTDB URL (required) */
+  config.database_url = DATABASE_URL;
+
+  /* Assign the callback function for the long running token generation task */
+  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
+
+  // Or use legacy authenticate method
+  // config.database_url = DATABASE_URL;
+  // config.signer.tokens.legacy_token = "<database secret>";
+
+  Firebase.begin(&config, &auth);
+
+  // Comment or pass false value when WiFi reconnection will control by your code or third party library
+  Firebase.reconnectWiFi(true);
+
+  // Optional, use classic HTTP GET and POST requests.
+  // This option allows get and delete functions (PUT and DELETE HTTP requests) works for
+  // device connected behind the Firewall that allows only GET and POST requests.
+  Firebase.RTDB.enableClassicRequest(&fbdo, true);
+
+  jsonConfigDataSet();
+  setCofigEprom ();
 }
 
 int inicio_r = 0;
 unsigned int refresh = 0; // variable para enviar datos cada 2 segundos, sistema de defensa frente a perdida de datos udp
 time_t prevDisplay = 0;   // when the digital clock was displayed
+unsigned long int PrevMillis = 0;
 
 void loop()
 {
@@ -525,14 +656,68 @@ void loop()
     Serial.println("Datos Enviados");
   }
 
-  // if (actualizar_disp == 1)                         // condicional para actualizar display
-  //{
-  //   actualizar_disp = 0;
-  //   actualizar_pantalla();
+  // ESCRIBIR EN DATABASE FIRESTORE
+  // if ((Firebase.ready() && (millis() - PrevMillis > 5000)) || PrevMillis == 0)
+  // {
+  //   PrevMillis = millis();
+  //   String timeStamp = String(String(year()) + "-" + String(month()) + "-" + String(day()) + "--" + String(hour()) + "-" + String(minute()));
+  //   Serial.println(timeStamp);
+
+  //   documentPath = "tasa/pisco-sur/comedor-secundario/" + timeStamp;
+
+  //   // If the document path contains space e.g. "a b c/d e f"
+  //   // It should encode the space as %20 then the path will be "a%20b%20c/d%20e%20f"
+
+  //   content.clear();
+  //   content.set("fields/aforo/integerValue", String(BDatos.aforo).c_str());
+  //   content.set("fields/total/integerValue", String(BDatos.total).c_str());
+  //   content.set("fields/egresos/integerValue", String(BDatos.egresos).c_str());
+  //   content.set("fields/ingresos/integerValue", String(BDatos.ingresos).c_str());
+  //   //content.set("fields/excesos/integerValue", String(random(1, 20)).c_str());
+
+  //   Serial.print("Create a document... ");
+
+  //   if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, documentPath.c_str(), content.raw()))
+  //     Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+  //   else
+  //     Serial.println(fbdo.errorReason());
   // }
 
-  censusPeople(); // Sesado de personas saliendo o ingresado. Actualiza BDatos.local y lo envia al otro esp
+  //// OBTENCION DE VALORES INT DE REALTIME FIREBASE EJECUTAR EN INTERVALOS DE HORAS
+  // if ((Firebase.ready() && (millis() - PrevMillis > 5000) || PrevMillis == 0))
+  // {
+  //   PrevMillis = millis();
+  //   int integer = 0;
+  //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
+  //   Serial.println(integer);
+  // }
 
+  if ((Firebase.ready() && (millis() - PrevMillis > 5000) || PrevMillis == 0))
+  {
+    PrevMillis = millis();
+  //   int integer = 0;
+  //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
+  //   Serial.println(integer);
+    //  FirebaseJson jVal;
+    //  Serial.printf("Get json ref... %s\n", Firebase.RTDB.getJSON(&fbdo, "/tasa/callao/bano-varones/config", &jVal) ? jVal.raw() : fbdo.errorReason().c_str());
+    jsonData.clear();
+    jsonData.set("total", BDatos.total);
+    jsonData.set("ingresos", BDatos.ingresos);
+    jsonData.set("egresos", BDatos.egresos);
+    Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, "/tasa/callao/bano-varones/data" + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
+
+    // int aforo_realtime = 0;
+    // if (Firebase.RTDB.getInt(&fbdo, F("/tasa/callao/bano-varones/config/aforo/int")))
+    // {
+    //   aforo_realtime = (fbdo.to<int>());
+    //   Serial.println("Aforo realtime = " + String(aforo_realtime));
+    // }
+    // else
+    // {
+    //   Serial.println(fbdo.errorReason().c_str());
+    // }
+  }
+  censusPeople(); // Sesado de personas saliendo o ingresado. Actualiza BDatos.local y lo envia al otro esp
   refresh++;
   if (refresh == 65000)
   {
