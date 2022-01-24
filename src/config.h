@@ -37,10 +37,11 @@ float horas_inactividad_max = 1.5;
 typedef struct struct_message // estructura de Base de Datos para MAIN GATE - PUERTA PRINCIPAL
 {
   int estado_inicial = 0;
-  int aforo = 0; //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< A F O R O
+  int aforo = aforo_init; //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< A F O R O
   int total = 0;
   int ingresos = 0;
   int egresos = 0;
+  int excesos = 0;
 } struct_message_main;
 
 struct_message BDatos; // instancia BDatos de Datos Locales - esto se muestra en el display y se comparte con el SECOD GATE
@@ -50,37 +51,62 @@ struct_message BDatosRecv; // instancia BDatoRcev para recibir los datos del SEC
 //====================================== SUBRUTINA PARA MANDAR DATOS DE AFORO AL DISPLAY (NANO)==========================================
 // comunicación serial con el arduino nano para mostrar valores en pantalla
 // ======================= FUNCIONES ESCRIBIR STRINGS EEPROM ===============
-void writeStringToEEPROM(int addrOffset, const String &strToWrite)
+void writeStringToEEPROM(int address, String data)
 {
-  byte len = strToWrite.length();
-  EEPROM.write(addrOffset, len);
-  for (int i = 0; i < len; i++)
+  int stringSize = data.length();
+  for(int i=0;i<stringSize;i++)
   {
-    EEPROM.write(addrOffset + 1 + i, strToWrite[i]);
+    EEPROM.write(address+i, data[i]);
+    EEPROM.commit();
   }
+  EEPROM.write(address + stringSize,'\0');   //Add termination null character
+  EEPROM.commit();
 }
 
-String readStringFromEEPROM(int addrOffset)
+String readStringFromEEPROM(int address)
 {
-  int newStrLen = EEPROM.read(addrOffset);
-  char data[newStrLen + 1];
-  for (int i = 0; i < newStrLen; i++)
+  char data[100]; //Max 100 Bytes
+  int len=0;
+  unsigned char k;
+  k = EEPROM.read(address);
+  while(k != '\0' && len < 100)   //Read until null character
   {
-    data[i] = EEPROM.read(addrOffset + 1 + i);
+    k = EEPROM.read(address + len);
+    data[len] = k;
+    len++;
   }
-  data[newStrLen] = '\ 0'; // !!! NOTE !!! Remove the space between the slash "/" and "0" (I've added a space because otherwise there is a display bug)
+  data[len]='\0';
   return String(data);
 }
 // =========================================================================
-void trataDeDato(String section, String item, unsigned int direccionMemoria)
+void trataDeDatoString(String section, String item, int direccionMemoria)
   {
     if (Firebase.RTDB.getString(&fbdo, path_config + "/" + section + "/" + item + "/"))
     {
-      Serial.println(" - " + item + " = " + String(fbdo.to<const char *>()));
-      if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<const char *>())) // verificar si el dato es el mismo guardado en memoria
+      String datoLeidoRTBD = String(fbdo.to<const char *>());
+      String datoLeidoMemoria = readStringFromEEPROM(direccionMemoria);
+      Serial.println(" -> " + item + " = " + datoLeidoRTBD);
+      Serial.println(" -> memoria" + datoLeidoMemoria);
+      if (datoLeidoMemoria != datoLeidoRTBD) // verificar si el dato es el mismo guardado en memoria
       {
-        writeStringToEEPROM(direccionMemoria, String(fbdo.to<const char *>()));
-        Serial.print(item + " nuevo en eeprom " + readStringFromEEPROM(0));
+        writeStringToEEPROM(direccionMemoria, String(datoLeidoRTBD));
+        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
+      }
+    }
+    else
+    {
+      Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+    }
+  }
+void trataDeDatoInt(String section, String item, unsigned int direccionMemoria)
+  {
+    if (Firebase.RTDB.getInt(&fbdo, path_config + "/" + section + "/" + item))
+    {
+      Serial.println(" -> " + item + " = " + String(fbdo.to<int >()).c_str());
+      if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<int>())) // verificar si el dato es el mismo guardado en memoria
+      {
+        writeStringToEEPROM(direccionMemoria, String(fbdo.to<int>()));
+        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
       }
     }
     else
@@ -102,23 +128,23 @@ void setCofigEprom()
   {
     Serial.println("..OK FIREBASE  CONECTADO");
     Serial.println(" WIFI :");
-    trataDeDato("wifi", "ssid", 0);
-    trataDeDato("wifi", "password", 50);
-    trataDeDato("wifi", "hostname", 100);
+    trataDeDatoString("wifi", "ssid", 0);
+    trataDeDatoString("wifi", "password", 50);
+    trataDeDatoString("wifi", "hostname", 100);
 
     Serial.println(" UDP :");
-    trataDeDato("udp", "master-port", 150);
-    trataDeDato("udp", "second-port", 160);
-    trataDeDato("udp", "datalogger-port", 170);
-    trataDeDato("udp", "datalogger-ip", 180);
+    trataDeDatoInt("udp", "master-port", 150);
+    trataDeDatoInt("udp", "second-port", 160);
+    trataDeDatoInt("udp", "datalogger-port", 170);
+    trataDeDatoInt("udp", "datalogger-ip", 180);
 
     Serial.println(" TARJET :");
-    trataDeDato("tarjet", "aforo-init", 190);
-    trataDeDato("tarjet", "abcd", 200);
-    trataDeDato("tarjet", "count-dalay-milisegundos", 210);
-    trataDeDato("tarjet", "estado", 220);
-    trataDeDato("tarjet", "inactivity-hours-reset", 230);
-    trataDeDato("tarjet", "set-data-realtime-segundos", 240);
+    trataDeDatoInt("tarjet", "aforo", 190);
+    trataDeDatoString("tarjet", "abcd", 200);
+    trataDeDatoInt("tarjet", "count-delay-milisegundos", 210);
+    trataDeDatoString("tarjet", "estado", 220);
+    trataDeDatoInt("tarjet", "inactivity-hours-reset", 230);
+    trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240);
   }
   else
   {
@@ -165,8 +191,8 @@ void setCofigEprom()
       writeStringToEEPROM(220, estado);
     if (EEPROM.read(230) == 255)
       writeStringToEEPROM(230, String(inactivity_hours_reset));
-    if (EEPROM.read(230) == 255)
-      writeStringToEEPROM(230, String(set_data_realtime_segundos));
+    if (EEPROM.read(240) == 255)
+      writeStringToEEPROM(240, String(set_data_realtime_segundos));
 
     Serial.println("- TARJET:");
     Serial.println("   - aforo init = " + master_port);

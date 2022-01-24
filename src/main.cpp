@@ -89,31 +89,31 @@ void jsonConfigDataSet()
 {
 
   // SETEO DE CONFIGURACIÓN DE TARJET
-  jsonConfigTarjet.add("abcd", "medium");
-  jsonConfigTarjet.add("aforo", random(1, 10));
-  jsonConfigTarjet.add("count-delay-milisegundos", random(1, 10));
-  jsonConfigTarjet.add("estado", "on");
-  jsonConfigTarjet.add("inactivity-hours-reset", 3);
-  jsonConfigTarjet.add("set-data-realtime-segundos", 30);
+  jsonConfigTarjet.add("abcd", readStringFromEEPROM(200));
+  jsonConfigTarjet.add("aforo", readStringFromEEPROM(190).toInt());
+  jsonConfigTarjet.add("count-delay-milisegundos", readStringFromEEPROM(210).toInt());
+  jsonConfigTarjet.add("estado", readStringFromEEPROM(220));
+  jsonConfigTarjet.add("inactivity-hours-reset", readStringFromEEPROM(230).toInt());
+  jsonConfigTarjet.add("set-data-realtime-segundos", readStringFromEEPROM(240).toInt());
 
   // SETEO DE CONFIGURACIÓN WIFI
-  jsonConfigWifi.add("hostname", "bano-varones");
-  jsonConfigWifi.add("ssid", "WF_P2_2");
-  jsonConfigWifi.add("password", "R420437015R");
+  jsonConfigWifi.add("hostname", readStringFromEEPROM(100));
+  jsonConfigWifi.add("ssid", readStringFromEEPROM(0));
+  jsonConfigWifi.add("password", readStringFromEEPROM(50));
 
   // SETEO DE CONFIGURACIÓN UDP
-  jsonConfigUdp.add("master-port", 8890);
-  jsonConfigUdp.add("second-port", 8891);
-  jsonConfigUdp.add("datalogger-ip", 20);
-  jsonConfigUdp.add("datalogger-port", 8888);
+  jsonConfigUdp.add("master-port", readStringFromEEPROM(150).toInt());
+  jsonConfigUdp.add("second-port", readStringFromEEPROM(160).toInt());
+  jsonConfigUdp.add("datalogger-ip", readStringFromEEPROM(180).toInt());
+  jsonConfigUdp.add("datalogger-port", readStringFromEEPROM(170).toInt());
 
   // SETEO DE CONFIGURACIÓN DATA - REALTIME
-  jsonData.add("egresos", random(1, 10));
-  jsonData.add("excesos", random(1, 10));
-  jsonData.add("ingresos", random(1, 10));
-  jsonData.add("total", random(1, 10));
+  jsonData.add("egresos", BDatos.egresos);
+  jsonData.add("excesos", BDatos.excesos);
+  jsonData.add("ingresos", BDatos.ingresos);
+  jsonData.add("total", BDatos.total);
 
-  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/wifi", &jsonConfigWifi))
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/wifi", &jsonConfigWifi))
   {
     Serial.println("Datos WIFI Firebase Realtime establecidos !!");
   }
@@ -122,7 +122,7 @@ void jsonConfigDataSet()
     Serial.println("*** Datos WIFI no establecidos en Firebase");
   }
 
-  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/tarjet", &jsonConfigTarjet))
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/tarjet", &jsonConfigTarjet))
   {
     Serial.println("Datos TARJET Firebase Realtime establecidos !!");
   }
@@ -131,7 +131,7 @@ void jsonConfigDataSet()
     Serial.println("*** Datos TARJET no establecidos en Firebase");
   }
 
-  if (Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/config/udp", &jsonConfigUdp))
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/udp", &jsonConfigUdp))
   {
     Serial.println("Datos UDP Firebase Realtime establecidos !!");
   }
@@ -140,7 +140,7 @@ void jsonConfigDataSet()
     Serial.println("*** Datos UDP no establecidos en Firebase");
   }
 
-  Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, "/tasa/callao/bano-varones/data", &jsonData) ? "ok" : fbdo.errorReason().c_str());
+  Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, path_data, &jsonData) ? "ok" : fbdo.errorReason().c_str());
 }
 
 //////////// variables para reseteo por inactividad /////////////
@@ -606,9 +606,9 @@ void setup()
   Firebase.RTDB.enableClassicRequest(&fbdo, true);
 
   /// ------ EPROM INIT ----
-  EEPROM.begin(512);
-  jsonConfigDataSet();
+  EEPROM.begin(260);
   setCofigEprom ();
+  jsonConfigDataSet();
 }
 
 int inicio_r = 0;
@@ -622,7 +622,7 @@ void loop()
 
   time_millis = millis();
   if (time_millis < 500)
-  {                         // cuando millis desborde despues de 50d aprox.
+  {                         // cuando millis desb orde despues de 50d aprox.
     before_time_millis = 0; // volvemos el tiempo_aux a 0;
   }
 
@@ -727,4 +727,20 @@ void loop()
     refresh = 0;
     flag_send_data = 1;
   }
+
+  Serial.println();
+  Serial.println(readStringFromEEPROM(0));
+  Serial.println(readStringFromEEPROM(50));
+  Serial.println(readStringFromEEPROM(100));
+  Serial.println(readStringFromEEPROM(150));
+  Serial.println(readStringFromEEPROM(160));
+  Serial.println(readStringFromEEPROM(170));
+  Serial.println(readStringFromEEPROM(180));
+  Serial.println(readStringFromEEPROM(190));
+  Serial.println(readStringFromEEPROM(200));
+  Serial.println(readStringFromEEPROM(210));
+  Serial.println(readStringFromEEPROM(220));
+  Serial.println(readStringFromEEPROM(230));
+  Serial.println(readStringFromEEPROM(240));
+  delay(15000);
 }
