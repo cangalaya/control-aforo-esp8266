@@ -224,6 +224,12 @@ void actualizarConfigFlash () {
     if (minute() == 0 && actualizarFlash){
       Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
       setCofigEprom();        // actualizamos valores
+      BDatos.aforo = readStringFromEEPROM(190).toInt();   // siempre actualizamos el aforo
+      horas_inactividad_max = readStringFromEEPROM(230).toFloat();
+      localPort = readStringFromEEPROM(150).toInt();
+      remotePort = readStringFromEEPROM(160).toInt();
+      remotePortDashboard = readStringFromEEPROM(170).toInt();
+      remoteIP_dashboard[3] = readStringFromEEPROM(180).toInt();
       actualizarFlash = false;
     } 
   }

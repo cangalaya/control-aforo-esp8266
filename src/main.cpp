@@ -553,6 +553,7 @@ void censusPeople()
       Serial.print("entro | "); // entro
       BDatos.total++;           // seteamos los valores locales
       BDatos.ingresos++;
+      if (BDatos.total > BDatos.aforo) BDatos.excesos++;
       Serial.println("Aforo: " + String(BDatos.aforo) + "  Total: " + String(BDatos.total)); // entro
       // SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);    // el elemento separador es el |
       flag_send_data = 1; // enviamos la data actualizada
