@@ -6,12 +6,12 @@ IPAddress subnet(255, 255, 255, 0);
 // Configuración Tarjeta
 String cliente = "tasa";
 String sede = "callao";
-String nombre_ambiente = "comedor-prueba4";
+String nombre_ambiente = "comedor-prueba5";
 unsigned int aforo_init = 27;
 unsigned int inactivity_hours_reset = 1;
 unsigned int count_dalay_milisegundos = 100;
 unsigned int set_data_realtime_segundos = 5;
-String abcd = "medium";
+String abcd = "low";
 String estado = "on";
 // Configuración Wifi
 String ssid = "WF_P2_2";         // WF_AFORO_SAM
@@ -222,29 +222,90 @@ void setCofigEprom()
   }
 }
 
-////// SETEO INICIAL DE DATOS //////////7
-void jsonConfigDataSet()
+////// SETEO INICIAL DE DATOS //////////
+void jsonConfigDataSetFirstStart()
 {
-
   // SETEO DE CONFIGURACIÓN DE TARJET
-  jsonConfigTarjet.add("abcd", (EEPROM.read(200) == 255) ? abcd : readStringFromEEPROM(200));
-  jsonConfigTarjet.add("aforo", (EEPROM.read(190) == 255) ? aforo_init : readStringFromEEPROM(190).toInt());
-  jsonConfigTarjet.add("count-delay-milisegundos", (EEPROM.read(210) == 255) ? count_dalay_milisegundos : readStringFromEEPROM(210).toInt()); // falta configurar
-  jsonConfigTarjet.add("estado", (EEPROM.read(220) == 255) ? estado : readStringFromEEPROM(220));                                             // falta configurar
-  jsonConfigTarjet.add("inactivity-hours-reset", (EEPROM.read(230) == 255) ? inactivity_hours_reset : readStringFromEEPROM(230).toFloat());
-  jsonConfigTarjet.add("set-data-realtime-segundos", (EEPROM.read(240) == 255) ? set_data_realtime_segundos : readStringFromEEPROM(240).toInt()); // falta configurar
+  jsonConfigTarjet.add("abcd", abcd);
+  jsonConfigTarjet.add("aforo", aforo_init );
+  jsonConfigTarjet.add("count-delay-milisegundos",count_dalay_milisegundos); // falta configurar
+  jsonConfigTarjet.add("estado", estado );                                             // falta configurar
+  jsonConfigTarjet.add("inactivity-hours-reset", inactivity_hours_reset);
+  jsonConfigTarjet.add("set-data-realtime-segundos", set_data_realtime_segundos); // falta configurar
 
   // SETEO DE CONFIGURACIÓN WIFI
-  jsonConfigWifi.add("ssid", (EEPROM.read(0) == 255) ? ssid : readStringFromEEPROM(0));
-  jsonConfigWifi.add("password", (EEPROM.read(50) == 255) ? password : readStringFromEEPROM(50));
+  jsonConfigWifi.add("ssid", ssid);
+  jsonConfigWifi.add("password", password);
   jsonConfigWifi.add("MAC-address", String(WiFi.macAddress())); // dirección mac
   jsonConfigWifi.add("IP-address", String(String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3])));
 
   // SETEO DE CONFIGURACIÓN UDP
-  jsonConfigUdp.add("master-port", (EEPROM.read(150) == 255) ? master_port : readStringFromEEPROM(150).toInt());
-  jsonConfigUdp.add("second-port", (EEPROM.read(160) == 255) ? second_port : readStringFromEEPROM(160).toInt());
-  jsonConfigUdp.add("datalogger-ip", (EEPROM.read(180) == 255) ? datalogger_ip : readStringFromEEPROM(180).toInt());
-  jsonConfigUdp.add("datalogger-port", (EEPROM.read(170) == 255) ? datalogger_port : readStringFromEEPROM(170).toInt());
+  jsonConfigUdp.add("master-port", master_port);
+  jsonConfigUdp.add("second-port", second_port);
+  jsonConfigUdp.add("datalogger-ip", datalogger_ip );
+  jsonConfigUdp.add("datalogger-port", datalogger_port);
+
+  // SETEO DE CONFIGURACIÓN DATA - REALTIME
+  jsonData.add("egresos", BDatos.egresos);
+  jsonData.add("excesos", BDatos.excesos);
+  jsonData.add("ingresos", BDatos.ingresos);
+  jsonData.add("total", BDatos.total);
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/wifi", &jsonConfigWifi))
+  {
+    Serial.println();
+    Serial.println("Datos WIFI Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println();
+    Serial.println("*** Datos WIFI no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/tarjet", &jsonConfigTarjet))
+  {
+    Serial.println("Datos TARJET Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos TARJET no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/udp", &jsonConfigUdp))
+  {
+    Serial.println("Datos UDP Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos UDP no establecidos en Firebase");
+  }
+
+  Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, path_data, &jsonData) ? "ok" : fbdo.errorReason().c_str());
+}
+
+
+void jsonConfigDataSet()
+{
+
+  // SETEO DE CONFIGURACIÓN DE TARJET
+  jsonConfigTarjet.add("abcd", readStringFromEEPROM(200));
+  jsonConfigTarjet.add("aforo", readStringFromEEPROM(190).toInt());
+  jsonConfigTarjet.add("count-delay-milisegundos", readStringFromEEPROM(210).toInt()); // falta configurar
+  jsonConfigTarjet.add("estado", readStringFromEEPROM(220));                                             // falta configurar
+  jsonConfigTarjet.add("inactivity-hours-reset", readStringFromEEPROM(230).toFloat());
+  jsonConfigTarjet.add("set-data-realtime-segundos", readStringFromEEPROM(240).toInt()); // falta configurar
+
+  // SETEO DE CONFIGURACIÓN WIFI
+  jsonConfigWifi.add("ssid", readStringFromEEPROM(0));
+  jsonConfigWifi.add("password", readStringFromEEPROM(50));
+  jsonConfigWifi.add("MAC-address", String(WiFi.macAddress())); // dirección mac
+  jsonConfigWifi.add("IP-address", String(String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3])));
+
+  // SETEO DE CONFIGURACIÓN UDP
+  jsonConfigUdp.add("master-port", readStringFromEEPROM(150).toInt());
+  jsonConfigUdp.add("second-port", readStringFromEEPROM(160).toInt());
+  jsonConfigUdp.add("datalogger-ip", readStringFromEEPROM(180).toInt());
+  jsonConfigUdp.add("datalogger-port", readStringFromEEPROM(170).toInt());
 
   // SETEO DE CONFIGURACIÓN DATA - REALTIME
   jsonData.add("egresos", BDatos.egresos);

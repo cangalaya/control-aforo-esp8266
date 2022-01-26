@@ -712,7 +712,7 @@ void setup()
     if (String("null") == String(Firebase.RTDB.getString(&fbdo, path_config + "/" + "wifi" + "/" + "ssid" + "/") ? fbdo.to<const char *>() : fbdo.errorReason().c_str()))
     {
       Serial.println(">>> Estableciendo datos por defecto en Firebase");
-      jsonConfigDataSet(); // si  no estan escritos primero crea los datos en la nube
+      jsonConfigDataSetFirstStart(); // si  no estan escritos primero crea los datos en la nube
       Serial.println("<<< Grabando datos en memoria");
       setCofigEprom();     // luego los lee y guarda en eeprom
     }
