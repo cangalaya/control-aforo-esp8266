@@ -1,10 +1,6 @@
 // UDP variables
 WiFiUDP UDP;  
 
-unsigned int localPort = master_port;      // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
-unsigned int remotePort = second_port;
-
-unsigned int remotePortDashboard = datalogger_port;      /// puerto remoto del dashboard
 
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
 

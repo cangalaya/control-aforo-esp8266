@@ -93,6 +93,8 @@ void jsonConfigDataSet()
   // SETEO DE CONFIGURACIÓN WIFI
   jsonConfigWifi.add("ssid", (EEPROM.read(0) == 255) ? ssid : readStringFromEEPROM(0));
   jsonConfigWifi.add("password", (EEPROM.read(50) == 255) ? password : readStringFromEEPROM(50));
+  jsonConfigWifi.add("MAC-address", String(WiFi.macAddress()));  // dirección mac
+  jsonConfigWifi.add("IP-address", String(String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3])));
 
   // SETEO DE CONFIGURACIÓN UDP
   jsonConfigUdp.add("master-port", (EEPROM.read(150) == 255) ? master_port : readStringFromEEPROM(150).toInt());
@@ -615,6 +617,7 @@ void reinicio_de_cuenta()
     BDatos.total = 0;
     BDatos.ingresos = 0;
     BDatos.egresos = 0;
+    BDatos.excesos = 0;
     reinicioCuenta = false;
   }
   if (minute() != minuto_reinicio)
@@ -638,6 +641,7 @@ void envioDataRealtime()
     jsonData.set("total", BDatos.total);
     jsonData.set("ingresos", BDatos.ingresos);
     jsonData.set("egresos", BDatos.egresos);
+    jsonData.set("excesos", BDatos.excesos);
     Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, path_data + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
 
     // int aforo_realtime = 0;

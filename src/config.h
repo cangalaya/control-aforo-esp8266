@@ -28,6 +28,10 @@ String path_config = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/conf
 String path_data = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/data";
 // /////// IP DASHBOARD ////////
 IPAddress remoteIP_dashboard(0,0,0,0); // declaración
+unsigned int localPort = master_port;      // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
+unsigned int remotePort = second_port;
+
+unsigned int remotePortDashboard = datalogger_port;      /// puerto remoto del dashboard
 
 ////// HORA DE REINICIO DE CUENTA /////
 
@@ -224,6 +228,7 @@ void actualizarConfigFlash () {
     if (minute() == 0 && actualizarFlash){
       Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
       setCofigEprom();        // actualizamos valores
+      jsonConfigDataSet();    // enviamos actualización
       BDatos.aforo = readStringFromEEPROM(190).toInt();   // siempre actualizamos el aforo
       horas_inactividad_max = readStringFromEEPROM(230).toFloat();
       localPort = readStringFromEEPROM(150).toInt();
