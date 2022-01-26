@@ -16,7 +16,7 @@ String estado = "on";
 // Configuración Wifi
 String ssid = "WF_P2_2";         //WF_AFORO_SAM
 String password = "R420437015R"; //ss1d_4FoRo_T4s4
-String hostname = "esp1";        // cambiar hostname
+
 // Configuración UDP
 unsigned int master_port = 8892;
 unsigned int second_port = 8893;
@@ -26,12 +26,14 @@ unsigned int datalogger_ip = 20;
 
 String path_config = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/config";
 String path_data = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/data";
-/////// IP DASHBOARD ////////
-uint8_t remoteIP_dashboard[] = {10, 228, 34, 20}; // IP FIJA DEL DASHBOARD Siempre tratar de que sea el 20
+// /////// IP DASHBOARD ////////
+IPAddress remoteIP_dashboard(0,0,0,0); // declaración
 
 ////// HORA DE REINICIO DE CUENTA /////
 
 float horas_inactividad_max = 1.5;
+int hora_reinicio = 23;
+int minuto_reinicio = 59;
 
 //----------------------------------------------------
 typedef struct struct_message // estructura de Base de Datos para MAIN GATE - PUERTA PRINCIPAL
@@ -86,7 +88,6 @@ void trataDeDatoString(String section, String item, int direccionMemoria)
       String datoLeidoRTBD = String(fbdo.to<const char *>());
       String datoLeidoMemoria = readStringFromEEPROM(direccionMemoria);
       Serial.println(" -> " + item + " = " + datoLeidoRTBD);
-      Serial.println(" -> memoria" + datoLeidoMemoria);
       if (datoLeidoMemoria != datoLeidoRTBD) // verificar si el dato es el mismo guardado en memoria
       {
         writeStringToEEPROM(direccionMemoria, String(datoLeidoRTBD));
@@ -114,6 +115,22 @@ void trataDeDatoInt(String section, String item, unsigned int direccionMemoria)
       Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
     }
   }
+  void trataDeDatoFloat(String section, String item, unsigned int direccionMemoria)
+  {
+    if (Firebase.RTDB.getFloat(&fbdo, path_config + "/" + section + "/" + item))
+    {
+      Serial.println(" -> " + item + " = " + String(fbdo.to<float>()).c_str());
+      if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<float>())) // verificar si el dato es el mismo guardado en memoria
+      {
+        writeStringToEEPROM(direccionMemoria, String(fbdo.to<float>()));
+        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
+      }
+    }
+    else
+    {
+      Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+    }
+  }
 // =========================================================================
 
 void mandar_data_display()
@@ -126,25 +143,25 @@ void setCofigEprom()
   // wifi
   if (Firebase.ready())
   {
+    Serial.println();
     Serial.println("..OK FIREBASE  CONECTADO");
     Serial.println(" WIFI :");
-    trataDeDatoString("wifi", "ssid", 0);
-    trataDeDatoString("wifi", "password", 50);
-    trataDeDatoString("wifi", "hostname", 100);
+    trataDeDatoString("wifi", "ssid", 0);         //
+    trataDeDatoString("wifi", "password", 50);    //
 
     Serial.println(" UDP :");
-    trataDeDatoInt("udp", "master-port", 150);
-    trataDeDatoInt("udp", "second-port", 160);
-    trataDeDatoInt("udp", "datalogger-port", 170);
-    trataDeDatoInt("udp", "datalogger-ip", 180);
+    trataDeDatoInt("udp", "master-port", 150);    // OK
+    trataDeDatoInt("udp", "second-port", 160);    // OK
+    trataDeDatoInt("udp", "datalogger-port", 170);  // OK
+    trataDeDatoInt("udp", "datalogger-ip", 180);    // OK
 
     Serial.println(" TARJET :");
-    trataDeDatoInt("tarjet", "aforo", 190);
-    trataDeDatoString("tarjet", "abcd", 200);
-    trataDeDatoInt("tarjet", "count-delay-milisegundos", 210);
-    trataDeDatoString("tarjet", "estado", 220);
-    trataDeDatoInt("tarjet", "inactivity-hours-reset", 230);
-    trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240);
+    trataDeDatoInt("tarjet", "aforo", 190);                       // OK
+    trataDeDatoString("tarjet", "abcd", 200);                     // OK
+    trataDeDatoInt("tarjet", "count-delay-milisegundos", 210);    // OK
+    trataDeDatoString("tarjet", "estado", 220);                   
+    trataDeDatoFloat("tarjet", "inactivity-hours-reset", 230);    // OK flotante
+    trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240);  // OK
   }
   else
   {
@@ -156,13 +173,10 @@ void setCofigEprom()
       writeStringToEEPROM(0, ssid); // si la eeprom en la dirección 0 esta vaćia, escribe el valor por defecto
     if (EEPROM.read(50) == 255)
       writeStringToEEPROM(50, password);
-    if (EEPROM.read(100) == 255)
-      writeStringToEEPROM(100, hostname);
 
     Serial.println("- WIFI:");
-    Serial.println("   - ssid = " + ssid);
-    Serial.println("   - password = " + password);
-    Serial.println("   - hostname = " + hostname);
+    Serial.println("   - ssid = " + readStringFromEEPROM(0));
+    Serial.println("   - password = " + readStringFromEEPROM(50));
 
     // UDP
     if (EEPROM.read(150) == 255)
@@ -175,10 +189,10 @@ void setCofigEprom()
       writeStringToEEPROM(180, String(datalogger_ip));
 
     Serial.println("- UDP:");
-    Serial.println("   - master port = " + master_port);
-    Serial.println("   - second port = " + second_port);
-    Serial.println("   - datalogger port = " + datalogger_port);
-    Serial.println("   - datalogger ip = xx,xx,xx," + datalogger_ip);
+    Serial.println("   - master port = " + readStringFromEEPROM(150));
+    Serial.println("   - second port = " + readStringFromEEPROM(160));
+    Serial.println("   - datalogger port = " + readStringFromEEPROM(170));
+    Serial.println("   - datalogger ip = xx,xx,xx," + readStringFromEEPROM(180));
 
     // TARJET
     if (EEPROM.read(190) == 255)
@@ -195,11 +209,25 @@ void setCofigEprom()
       writeStringToEEPROM(240, String(set_data_realtime_segundos));
 
     Serial.println("- TARJET:");
-    Serial.println("   - aforo init = " + master_port);
-    Serial.println("   - abcd = " + abcd);
-    Serial.println("   - count dalay milisegundos = " + count_dalay_milisegundos);
-    Serial.println("   - estado = " + estado);
-    Serial.println("   - inactivity hours reset = " + inactivity_hours_reset);
-    Serial.println("   - set data realtime segundos = " + set_data_realtime_segundos);
+    Serial.println("   - aforo init = " + readStringFromEEPROM(190));
+    Serial.println("   - abcd = " + readStringFromEEPROM(200));
+    Serial.println("   - count dalay milisegundos = " + readStringFromEEPROM(210));
+    Serial.println("   - estado = " + readStringFromEEPROM(220));
+    Serial.println("   - inactivity hours reset = " + readStringFromEEPROM(230));
+    Serial.println("   - set data realtime segundos = " + readStringFromEEPROM(240));
+  }
+}
+bool actualizarFlash = true;
+void actualizarConfigFlash () {
+  if (hour() != 7 && hour() != 8 && hour() != 9 && hour() != 11 && hour() != 12 && hour() != 13 && hour() != 14 && hour() != 15 && hour() != 17 && hour() != 18 && hour() != 19) {
+    // horarios de actualización -> 0 -- 6 - 10 - 4pm - 12pm
+    if (minute() == 0 && actualizarFlash){
+      Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
+      setCofigEprom();        // actualizamos valores
+      actualizarFlash = false;
+    } 
+  }
+  if (minute() != 0){
+    actualizarFlash = true;
   }
 }
