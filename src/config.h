@@ -6,20 +6,20 @@ IPAddress subnet(255, 255, 255, 0);
 // Configuración Tarjeta
 String cliente = "tasa";
 String sede = "callao";
-String nombre_ambiente = "bano-varones";
-unsigned int aforo_init = 30;
-unsigned int inactivity_hours_reset = 3;
-unsigned int count_dalay_milisegundos = 0;
-unsigned int set_data_realtime_segundos = 60;
+String nombre_ambiente = "comedor-prueba4";
+unsigned int aforo_init = 27;
+unsigned int inactivity_hours_reset = 1;
+unsigned int count_dalay_milisegundos = 100;
+unsigned int set_data_realtime_segundos = 5;
 String abcd = "medium";
 String estado = "on";
 // Configuración Wifi
-String ssid = "WF_P2_2";         //WF_AFORO_SAM
-String password = "R420437015R"; //ss1d_4FoRo_T4s4
+String ssid = "WF_P2_2";         // WF_AFORO_SAM
+String password = "R420437015R"; // ss1d_4FoRo_T4s4
 
 // Configuración UDP
-unsigned int master_port = 8892;
-unsigned int second_port = 8893;
+unsigned int master_port = 8898;
+unsigned int second_port = 8899;
 unsigned int datalogger_port = 8888;
 unsigned int datalogger_ip = 20;
 //==================================================
@@ -27,11 +27,11 @@ unsigned int datalogger_ip = 20;
 String path_config = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/config";
 String path_data = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/data";
 // /////// IP DASHBOARD ////////
-IPAddress remoteIP_dashboard(0,0,0,0); // declaración
-unsigned int localPort = master_port;      // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
+IPAddress remoteIP_dashboard(0, 0, 0, 0); // declaración
+unsigned int localPort = master_port;     // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
 unsigned int remotePort = second_port;
 
-unsigned int remotePortDashboard = datalogger_port;      /// puerto remoto del dashboard
+unsigned int remotePortDashboard = datalogger_port; /// puerto remoto del dashboard
 
 ////// HORA DE REINICIO DE CUENTA /////
 
@@ -60,81 +60,81 @@ struct_message BDatosRecv; // instancia BDatoRcev para recibir los datos del SEC
 void writeStringToEEPROM(int address, String data)
 {
   int stringSize = data.length();
-  for(int i=0;i<stringSize;i++)
+  for (int i = 0; i < stringSize; i++)
   {
-    EEPROM.write(address+i, data[i]);
+    EEPROM.write(address + i, data[i]);
     EEPROM.commit();
   }
-  EEPROM.write(address + stringSize,'\0');   //Add termination null character
+  EEPROM.write(address + stringSize, '\0'); // Add termination null character
   EEPROM.commit();
 }
 
 String readStringFromEEPROM(int address)
 {
-  char data[100]; //Max 100 Bytes
-  int len=0;
+  char data[100]; // Max 100 Bytes
+  int len = 0;
   unsigned char k;
   k = EEPROM.read(address);
-  while(k != '\0' && len < 100)   //Read until null character
+  while (k != '\0' && len < 100) // Read until null character
   {
     k = EEPROM.read(address + len);
     data[len] = k;
     len++;
   }
-  data[len]='\0';
+  data[len] = '\0';
   return String(data);
 }
 // =========================================================================
 void trataDeDatoString(String section, String item, int direccionMemoria)
+{
+  if (Firebase.RTDB.getString(&fbdo, path_config + "/" + section + "/" + item + "/"))
   {
-    if (Firebase.RTDB.getString(&fbdo, path_config + "/" + section + "/" + item + "/"))
+    String datoLeidoRTBD = String(fbdo.to<const char *>());
+    String datoLeidoMemoria = readStringFromEEPROM(direccionMemoria);
+    Serial.println(" -> " + item + " = " + datoLeidoRTBD);
+    if (datoLeidoMemoria != datoLeidoRTBD) // verificar si el dato es el mismo guardado en memoria
     {
-      String datoLeidoRTBD = String(fbdo.to<const char *>());
-      String datoLeidoMemoria = readStringFromEEPROM(direccionMemoria);
-      Serial.println(" -> " + item + " = " + datoLeidoRTBD);
-      if (datoLeidoMemoria != datoLeidoRTBD) // verificar si el dato es el mismo guardado en memoria
-      {
-        writeStringToEEPROM(direccionMemoria, String(datoLeidoRTBD));
-        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
-      }
-    }
-    else
-    {
-      Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+      writeStringToEEPROM(direccionMemoria, String(datoLeidoRTBD));
+      Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
     }
   }
+  else
+  {
+    Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+  }
+}
 void trataDeDatoInt(String section, String item, unsigned int direccionMemoria)
+{
+  if (Firebase.RTDB.getInt(&fbdo, path_config + "/" + section + "/" + item))
   {
-    if (Firebase.RTDB.getInt(&fbdo, path_config + "/" + section + "/" + item))
+    Serial.println(" -> " + item + " = " + String(fbdo.to<int>()).c_str());
+    if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<int>())) // verificar si el dato es el mismo guardado en memoria
     {
-      Serial.println(" -> " + item + " = " + String(fbdo.to<int >()).c_str());
-      if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<int>())) // verificar si el dato es el mismo guardado en memoria
-      {
-        writeStringToEEPROM(direccionMemoria, String(fbdo.to<int>()));
-        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
-      }
-    }
-    else
-    {
-      Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+      writeStringToEEPROM(direccionMemoria, String(fbdo.to<int>()));
+      Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
     }
   }
-  void trataDeDatoFloat(String section, String item, unsigned int direccionMemoria)
+  else
   {
-    if (Firebase.RTDB.getFloat(&fbdo, path_config + "/" + section + "/" + item))
+    Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+  }
+}
+void trataDeDatoFloat(String section, String item, unsigned int direccionMemoria)
+{
+  if (Firebase.RTDB.getFloat(&fbdo, path_config + "/" + section + "/" + item))
+  {
+    Serial.println(" -> " + item + " = " + String(fbdo.to<float>()).c_str());
+    if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<float>())) // verificar si el dato es el mismo guardado en memoria
     {
-      Serial.println(" -> " + item + " = " + String(fbdo.to<float>()).c_str());
-      if (readStringFromEEPROM(direccionMemoria) != String(fbdo.to<float>())) // verificar si el dato es el mismo guardado en memoria
-      {
-        writeStringToEEPROM(direccionMemoria, String(fbdo.to<float>()));
-        Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
-      }
-    }
-    else
-    {
-      Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+      writeStringToEEPROM(direccionMemoria, String(fbdo.to<float>()));
+      Serial.println("   - " + item + " nuevo en eeprom " + readStringFromEEPROM(direccionMemoria));
     }
   }
+  else
+  {
+    Serial.println("** Error al recibir " + item + " : " + String(fbdo.errorReason().c_str()));
+  }
+}
 // =========================================================================
 
 void mandar_data_display()
@@ -150,22 +150,22 @@ void setCofigEprom()
     Serial.println();
     Serial.println("..OK FIREBASE  CONECTADO");
     Serial.println(" WIFI :");
-    trataDeDatoString("wifi", "ssid", 0);         //
-    trataDeDatoString("wifi", "password", 50);    //
+    trataDeDatoString("wifi", "ssid", 0);      //
+    trataDeDatoString("wifi", "password", 50); //
 
     Serial.println(" UDP :");
-    trataDeDatoInt("udp", "master-port", 150);    // OK
-    trataDeDatoInt("udp", "second-port", 160);    // OK
-    trataDeDatoInt("udp", "datalogger-port", 170);  // OK
-    trataDeDatoInt("udp", "datalogger-ip", 180);    // OK
+    trataDeDatoInt("udp", "master-port", 150);     // OK
+    trataDeDatoInt("udp", "second-port", 160);     // OK
+    trataDeDatoInt("udp", "datalogger-port", 170); // OK
+    trataDeDatoInt("udp", "datalogger-ip", 180);   // OK
 
     Serial.println(" TARJET :");
-    trataDeDatoInt("tarjet", "aforo", 190);                       // OK
-    trataDeDatoString("tarjet", "abcd", 200);                     // OK
-    trataDeDatoInt("tarjet", "count-delay-milisegundos", 210);    // OK
-    trataDeDatoString("tarjet", "estado", 220);                   
-    trataDeDatoFloat("tarjet", "inactivity-hours-reset", 230);    // OK flotante
-    trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240);  // OK
+    trataDeDatoInt("tarjet", "aforo", 190);                    // OK
+    trataDeDatoString("tarjet", "abcd", 200);                  // OK
+    trataDeDatoInt("tarjet", "count-delay-milisegundos", 210); // OK
+    trataDeDatoString("tarjet", "estado", 220);
+    trataDeDatoFloat("tarjet", "inactivity-hours-reset", 230);   // OK flotante
+    trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240); // OK
   }
   else
   {
@@ -221,24 +221,91 @@ void setCofigEprom()
     Serial.println("   - set data realtime segundos = " + readStringFromEEPROM(240));
   }
 }
+
+////// SETEO INICIAL DE DATOS //////////7
+void jsonConfigDataSet()
+{
+
+  // SETEO DE CONFIGURACIÓN DE TARJET
+  jsonConfigTarjet.add("abcd", (EEPROM.read(200) == 255) ? abcd : readStringFromEEPROM(200));
+  jsonConfigTarjet.add("aforo", (EEPROM.read(190) == 255) ? aforo_init : readStringFromEEPROM(190).toInt());
+  jsonConfigTarjet.add("count-delay-milisegundos", (EEPROM.read(210) == 255) ? count_dalay_milisegundos : readStringFromEEPROM(210).toInt()); // falta configurar
+  jsonConfigTarjet.add("estado", (EEPROM.read(220) == 255) ? estado : readStringFromEEPROM(220));                                             // falta configurar
+  jsonConfigTarjet.add("inactivity-hours-reset", (EEPROM.read(230) == 255) ? inactivity_hours_reset : readStringFromEEPROM(230).toFloat());
+  jsonConfigTarjet.add("set-data-realtime-segundos", (EEPROM.read(240) == 255) ? set_data_realtime_segundos : readStringFromEEPROM(240).toInt()); // falta configurar
+
+  // SETEO DE CONFIGURACIÓN WIFI
+  jsonConfigWifi.add("ssid", (EEPROM.read(0) == 255) ? ssid : readStringFromEEPROM(0));
+  jsonConfigWifi.add("password", (EEPROM.read(50) == 255) ? password : readStringFromEEPROM(50));
+  jsonConfigWifi.add("MAC-address", String(WiFi.macAddress())); // dirección mac
+  jsonConfigWifi.add("IP-address", String(String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3])));
+
+  // SETEO DE CONFIGURACIÓN UDP
+  jsonConfigUdp.add("master-port", (EEPROM.read(150) == 255) ? master_port : readStringFromEEPROM(150).toInt());
+  jsonConfigUdp.add("second-port", (EEPROM.read(160) == 255) ? second_port : readStringFromEEPROM(160).toInt());
+  jsonConfigUdp.add("datalogger-ip", (EEPROM.read(180) == 255) ? datalogger_ip : readStringFromEEPROM(180).toInt());
+  jsonConfigUdp.add("datalogger-port", (EEPROM.read(170) == 255) ? datalogger_port : readStringFromEEPROM(170).toInt());
+
+  // SETEO DE CONFIGURACIÓN DATA - REALTIME
+  jsonData.add("egresos", BDatos.egresos);
+  jsonData.add("excesos", BDatos.excesos);
+  jsonData.add("ingresos", BDatos.ingresos);
+  jsonData.add("total", BDatos.total);
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/wifi", &jsonConfigWifi))
+  {
+    Serial.println();
+    Serial.println("Datos WIFI Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println();
+    Serial.println("*** Datos WIFI no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/tarjet", &jsonConfigTarjet))
+  {
+    Serial.println("Datos TARJET Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos TARJET no establecidos en Firebase");
+  }
+
+  if (Firebase.RTDB.setJSONAsync(&fbdo, path_config + "/udp", &jsonConfigUdp))
+  {
+    Serial.println("Datos UDP Firebase Realtime establecidos !!");
+  }
+  else
+  {
+    Serial.println("*** Datos UDP no establecidos en Firebase");
+  }
+
+  Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, path_data, &jsonData) ? "ok" : fbdo.errorReason().c_str());
+}
+
 bool actualizarFlash = true;
-void actualizarConfigFlash () {
-  if (hour() != 7 && hour() != 8 && hour() != 9 && hour() != 11 && hour() != 12 && hour() != 13 && hour() != 14 && hour() != 15 && hour() != 17 && hour() != 18 && hour() != 19) {
+void actualizarConfigFlash()
+{
+  if (hour() != 7 && hour() != 8 && hour() != 9 && hour() != 11 && hour() != 12 && hour() != 13 && hour() != 14 && hour() != 15 && hour() != 17 && hour() != 18 && hour() != 19)
+  {
     // horarios de actualización -> 0 -- 6 - 10 - 4pm - 12pm
-    if (minute() == 0 && actualizarFlash){
+    if (minute() == 0 && actualizarFlash)
+    {
       Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
-      setCofigEprom();        // actualizamos valores
-      jsonConfigDataSet();    // enviamos actualización
-      BDatos.aforo = readStringFromEEPROM(190).toInt();   // siempre actualizamos el aforo
+      setCofigEprom();                                  // actualizamos valores
+      jsonConfigDataSet();                              // enviamos actualización
+      BDatos.aforo = readStringFromEEPROM(190).toInt(); // siempre actualizamos el aforo
       horas_inactividad_max = readStringFromEEPROM(230).toFloat();
       localPort = readStringFromEEPROM(150).toInt();
       remotePort = readStringFromEEPROM(160).toInt();
       remotePortDashboard = readStringFromEEPROM(170).toInt();
       remoteIP_dashboard[3] = readStringFromEEPROM(180).toInt();
       actualizarFlash = false;
-    } 
+    }
   }
-  if (minute() != 0){
+  if (minute() != 0)
+  {
     actualizarFlash = true;
   }
 }
