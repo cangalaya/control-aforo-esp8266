@@ -20,18 +20,18 @@ String password = "R420437015R"; // ss1d_4FoRo_T4s4
 // Configuración UDP
 unsigned int master_port = 8898;
 unsigned int second_port = 8899;
-unsigned int datalogger_port = 8888;
-unsigned int datalogger_ip = 20;
+// unsigned int datalogger_port = 8888;
+// unsigned int datalogger_ip = 20;
 //==================================================
 
 String path_config = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/config";
 String path_data = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/data";
 // /////// IP DASHBOARD ////////
-IPAddress remoteIP_dashboard(0, 0, 0, 0); // declaración
+// IPAddress remoteIP_dashboard(0, 0, 0, 0); // declaración
 unsigned int localPort = master_port;     // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
 unsigned int remotePort = second_port;
 
-unsigned int remotePortDashboard = datalogger_port; /// puerto remoto del dashboard
+// unsigned int remotePortDashboard = datalogger_port; /// puerto remoto del dashboard
 
 ////// HORA DE REINICIO DE CUENTA /////
 
@@ -156,8 +156,6 @@ void setCofigEprom()
     Serial.println(" UDP :");
     trataDeDatoInt("udp", "master-port", 150);     // OK
     trataDeDatoInt("udp", "second-port", 160);     // OK
-    trataDeDatoInt("udp", "datalogger-port", 170); // OK
-    trataDeDatoInt("udp", "datalogger-ip", 180);   // OK
 
     Serial.println(" TARJET :");
     trataDeDatoInt("tarjet", "aforo", 190);                    // OK
@@ -187,10 +185,6 @@ void setCofigEprom()
       writeStringToEEPROM(150, String(master_port)); // ocupa 10 espacios
     if (EEPROM.read(160) == 255)
       writeStringToEEPROM(160, String(second_port));
-    if (EEPROM.read(170) == 255)
-      writeStringToEEPROM(170, String(datalogger_port));
-    if (EEPROM.read(180) == 255)
-      writeStringToEEPROM(180, String(datalogger_ip));
 
     Serial.println("- UDP:");
     Serial.println("   - master port = " + readStringFromEEPROM(150));
@@ -242,8 +236,6 @@ void jsonConfigDataSetFirstStart()
   // SETEO DE CONFIGURACIÓN UDP
   jsonConfigUdp.add("master-port", master_port);
   jsonConfigUdp.add("second-port", second_port);
-  jsonConfigUdp.add("datalogger-ip", datalogger_ip );
-  jsonConfigUdp.add("datalogger-port", datalogger_port);
 
   // SETEO DE CONFIGURACIÓN DATA - REALTIME
   jsonData.add("egresos", BDatos.egresos);
@@ -304,8 +296,6 @@ void jsonConfigDataSet()
   // SETEO DE CONFIGURACIÓN UDP
   jsonConfigUdp.add("master-port", readStringFromEEPROM(150).toInt());
   jsonConfigUdp.add("second-port", readStringFromEEPROM(160).toInt());
-  jsonConfigUdp.add("datalogger-ip", readStringFromEEPROM(180).toInt());
-  jsonConfigUdp.add("datalogger-port", readStringFromEEPROM(170).toInt());
 
   // SETEO DE CONFIGURACIÓN DATA - REALTIME
   jsonData.add("egresos", BDatos.egresos);
@@ -360,8 +350,6 @@ void actualizarConfigFlash()
       horas_inactividad_max = readStringFromEEPROM(230).toFloat();
       localPort = readStringFromEEPROM(150).toInt();
       remotePort = readStringFromEEPROM(160).toInt();
-      remotePortDashboard = readStringFromEEPROM(170).toInt();
-      remoteIP_dashboard[3] = readStringFromEEPROM(180).toInt();
       actualizarFlash = false;
     }
   }

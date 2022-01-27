@@ -8,7 +8,7 @@ int ingreso = 0;
 int egreso = 0;
 int total = 0;
 int last_value = 0;
-int diferencia = 0;
+//int diferencia = 0;
 
 //char actualizar_disp = 0;
 int flag_send_data = 0;
@@ -58,7 +58,8 @@ void ProcessPacket(String response)
       //diferencia = BDatosRecv.total - BDatos.total;   //actualizamos los valores localea
       BDatos.total = BDatosRecv.total;
       
-      counter_minutos_inactividad = 0;      // reseteamos el counter de innactividad
+      //counter_minutos_inactividad = 0;      // reseteamos el counter de innactividad
+      counter_millis = 0;
       
       Serial.print("Total actualizado ");
     }
