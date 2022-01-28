@@ -15,7 +15,7 @@ int flag_send_data = 0;
 
 void ProcessPacket(String response)
 {
-
+    // paquete esperado -> 1|12|7|14|2|1|    estado_inicial | aforo | total | ingresos | egresos | excesos |
     BDatosRecv.estado_inicial = s.separa(response,'|',0 ).toInt();   //separamos el estado inicial
     Serial.print("estado_inicial recv: ");
     Serial.println(BDatosRecv.estado_inicial);
@@ -35,6 +35,10 @@ void ProcessPacket(String response)
     BDatosRecv.egresos = s.separa(response,'|',4 ).toInt();  //recibimos valores
     Serial.print("egresos recv: ");
     Serial.println(BDatosRecv.egresos);
+
+    BDatosRecv.excesos = s.separa(response,'|',5 ).toInt();  //recibimos valores
+    Serial.print("excesos recv: ");
+    Serial.println(BDatosRecv.excesos);
   
 
     if (BDatosRecv.estado_inicial == 0)                                   // si el receptor se reseteo repentinamente
@@ -48,10 +52,11 @@ void ProcessPacket(String response)
       return;
     }
     
-    if (BDatosRecv.aforo != BDatos.aforo)
+    if ((BDatosRecv.aforo != BDatos.aforo) && (BDatosRecv.aforo =! 0))
     {
       BDatos.aforo = BDatosRecv.aforo;        // si el aforo cambia, entonces actualizamos el valor local
-      Serial.println("**Aforo actualizado ");
+      Serial.println("**Aforo actualizado en EEPROM");
+      writeStringToEEPROM(190, String(BDatos.aforo));
     }
     if (BDatosRecv.total != BDatos.total)
     {
@@ -74,6 +79,12 @@ void ProcessPacket(String response)
       //diferencia = BDatosRecv.egresos - BDatos.egresos;   //actualizamos los valores localea
       BDatos.egresos = BDatosRecv.egresos;
       Serial.print(" egresos actualizado");
+    }
+    if (BDatosRecv.excesos != BDatos.excesos)
+    {
+      //diferencia = BDatosRecv.egresos - BDatos.egresos;   //actualizamos los valores localea
+      BDatos.excesos = BDatosRecv.excesos;
+      Serial.print(" excesos actualizado");
     }
     Serial.println("");
     Serial.println("Aforo: "+ String(BDatos.aforo) + "  Total: "+ String(BDatos.total));  //mostramos datos en pantalla

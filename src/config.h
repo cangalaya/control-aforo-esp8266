@@ -28,7 +28,7 @@ String path_config = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/conf
 String path_data = "/" + cliente + "/" + sede + "/" + nombre_ambiente + "/data";
 // /////// IP DASHBOARD ////////
 // IPAddress remoteIP_dashboard(0, 0, 0, 0); // declaración
-unsigned int localPort = master_port;     // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
+unsigned int localPort = master_port; // si falla la comunicación en 1 sentido. Cambiar el puerto, ya que puede que ya esta siendo usado por otro sistema
 unsigned int remotePort = second_port;
 
 // unsigned int remotePortDashboard = datalogger_port; /// puerto remoto del dashboard
@@ -154,8 +154,8 @@ void setCofigEprom()
     trataDeDatoString("wifi", "password", 50); //
 
     Serial.println(" UDP :");
-    trataDeDatoInt("udp", "master-port", 150);     // OK
-    trataDeDatoInt("udp", "second-port", 160);     // OK
+    trataDeDatoInt("udp", "master-port", 150); // OK
+    trataDeDatoInt("udp", "second-port", 160); // OK
 
     Serial.println(" TARJET :");
     trataDeDatoInt("tarjet", "aforo", 190);                    // OK
@@ -189,8 +189,6 @@ void setCofigEprom()
     Serial.println("- UDP:");
     Serial.println("   - master port = " + readStringFromEEPROM(150));
     Serial.println("   - second port = " + readStringFromEEPROM(160));
-    Serial.println("   - datalogger port = " + readStringFromEEPROM(170));
-    Serial.println("   - datalogger ip = xx,xx,xx," + readStringFromEEPROM(180));
 
     // TARJET
     if (EEPROM.read(190) == 255)
@@ -221,9 +219,9 @@ void jsonConfigDataSetFirstStart()
 {
   // SETEO DE CONFIGURACIÓN DE TARJET
   jsonConfigTarjet.add("abcd", abcd);
-  jsonConfigTarjet.add("aforo", aforo_init );
-  jsonConfigTarjet.add("count-delay-milisegundos",count_dalay_milisegundos); // falta configurar
-  jsonConfigTarjet.add("estado", estado );                                             // falta configurar
+  jsonConfigTarjet.add("aforo", aforo_init);
+  jsonConfigTarjet.add("count-delay-milisegundos", count_dalay_milisegundos); // falta configurar
+  jsonConfigTarjet.add("estado", estado);                                     // falta configurar
   jsonConfigTarjet.add("inactivity-hours-reset", inactivity_hours_reset);
   jsonConfigTarjet.add("set-data-realtime-segundos", set_data_realtime_segundos); // falta configurar
 
@@ -275,7 +273,6 @@ void jsonConfigDataSetFirstStart()
   Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, path_data, &jsonData) ? "ok" : fbdo.errorReason().c_str());
 }
 
-
 void jsonConfigDataSet()
 {
 
@@ -283,7 +280,7 @@ void jsonConfigDataSet()
   jsonConfigTarjet.add("abcd", readStringFromEEPROM(200));
   jsonConfigTarjet.add("aforo", readStringFromEEPROM(190).toInt());
   jsonConfigTarjet.add("count-delay-milisegundos", readStringFromEEPROM(210).toInt()); // falta configurar
-  jsonConfigTarjet.add("estado", readStringFromEEPROM(220));                                             // falta configurar
+  jsonConfigTarjet.add("estado", readStringFromEEPROM(220));                           // falta configurar
   jsonConfigTarjet.add("inactivity-hours-reset", readStringFromEEPROM(230).toFloat());
   jsonConfigTarjet.add("set-data-realtime-segundos", readStringFromEEPROM(240).toInt()); // falta configurar
 
@@ -335,26 +332,14 @@ void jsonConfigDataSet()
   Serial.printf("Set jsonData... %s\n", Firebase.RTDB.setJSONAsync(&fbdo, path_data, &jsonData) ? "ok" : fbdo.errorReason().c_str());
 }
 
-bool actualizarFlash = true;
 void actualizarConfigFlash()
 {
-  if (hour() != 7 && hour() != 8 && hour() != 9 && hour() != 11 && hour() != 12 && hour() != 13 && hour() != 14 && hour() != 15 && hour() != 17 && hour() != 18 && hour() != 19)
-  {
-    // horarios de actualización -> 0 -- 6 - 10 - 4pm - 12pm
-    if (minute() == 0 && actualizarFlash)
-    {
-      Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
-      setCofigEprom();                                  // actualizamos valores
-      jsonConfigDataSet();                              // enviamos actualización
-      BDatos.aforo = readStringFromEEPROM(190).toInt(); // siempre actualizamos el aforo
-      horas_inactividad_max = readStringFromEEPROM(230).toFloat();
-      localPort = readStringFromEEPROM(150).toInt();
-      remotePort = readStringFromEEPROM(160).toInt();
-      actualizarFlash = false;
-    }
-  }
-  if (minute() != 0)
-  {
-    actualizarFlash = true;
-  }
+
+  Serial.println("<<<<<   A C T U A L I Z A N D O   M E M O R I A   F L A S H   <<<<<");
+  setCofigEprom();                                  // actualizamos valores
+  //jsonConfigDataSet();                              // enviamos actualización
+  BDatos.aforo = readStringFromEEPROM(190).toInt(); // siempre actualizamos el aforo
+  horas_inactividad_max = readStringFromEEPROM(230).toFloat();
+  localPort = readStringFromEEPROM(150).toInt();
+  remotePort = readStringFromEEPROM(160).toInt();
 }

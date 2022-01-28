@@ -10,16 +10,15 @@
 ///////////// DEPENDENCIAS ///////////
 #include <TimeLib.h>
 #include <ESP8266WiFi.h>
-#include <WiFiUdp.h> // Protocolo UDP (transferencia de datos rapida, pero no segura)
+#include <WiFiUdp.h>             // Protocolo UDP (transferencia de datos rapida, pero no segura)
 #include <Separador.h>           // liberia para separa string (se usa para separar valores en la trama de datos de comunicación con el UDP)
 #include <Firebase_ESP_Client.h> //#include <Firebase_ESP_Client.h>
 #include <EEPROM.h>              // update de memorias fash
 
-
 ///// VARIABLES PARA EL RESET DE AFORO ////
 int minuto = 0;
 int minuto_anterior = 0;
-//int counter_minutos_inactividad = 0;
+// int counter_minutos_inactividad = 0;
 
 //----------------------------------------DMD Configuration (P10 Panel)
 //#define DISPLAYS_WIDE 3 //--> Panel Columns         <<<<<<<<<<<<<<< D I S P L A Y   C O L U M N A S <<<<<<<<<<<
@@ -71,9 +70,6 @@ unsigned long counter_millis = 0;
 #define USER_EMAIL "comedor1@tasa-callao.com"
 #define USER_PASSWORD "comedor1"
 
-
-
-
 //=================================================================================================================================================
 //============================================================== R U T I N E S ====================================================================
 //=================================================================================================================================================
@@ -86,11 +82,10 @@ void listenPeopleCounting()
     mensaje = Serial.readStringUntil('\n');
     if (mensaje.startsWith("/", 0)) // si es que el string empieza con / aforo y total recibidos por el esp
     {
-      //aforo = s.separa(mensaje, '/', 1).toInt();
+      // aforo = s.separa(mensaje, '/', 1).toInt();
       BDatos.total = s.separa(mensaje, '/', 2).toInt();
-      Serial.println("total actualizado ->"+ String(BDatos.total));
+      Serial.println("total actualizado ->" + String(BDatos.total));
     }
-
   }
   if (last_value != BDatos.total)
   {
@@ -99,7 +94,7 @@ void listenPeopleCounting()
       // si la persona entro
       //     {
       Serial.print("entro | "); // entro
-      //BDatos.total++;           // seteamos los valores locales
+      // BDatos.total++;           // seteamos los valores locales
       BDatos.ingresos++;
       if (BDatos.total > BDatos.aforo)
         BDatos.excesos++;
@@ -107,27 +102,26 @@ void listenPeopleCounting()
       // SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);    // el elemento separador es el |
       flag_send_data = 1; // enviamos la data actualizada
       // actualizar_pantalla();                                                                    // actualizamos pantalla con nuevos valores
-      //counter_minutos_inactividad = 0; // reset a minutos de inactividad
-      counter_millis = 0;              // reseteamos el counter_millis para anular el reseteo por inacctividad
+      // counter_minutos_inactividad = 0; // reset a minutos de inactividad
+      counter_millis = 0; // reseteamos el counter_millis para anular el reseteo por inacctividad
     }
     else
     {
       Serial.print("salio | ");  // salio
       if (BDatos.total - 1 >= 0) // protección para que no adopte valores negativos
       {
-        BDatos.total--;
+        //BDatos.total--;
         BDatos.egresos++;
         // SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
         flag_send_data = 1; // enviamos la data actualizada
         // actualizar_pantalla();
-        //counter_minutos_inactividad = 0;                                                     // reset a minutos de inactividad
+        // counter_minutos_inactividad = 0;                                                  // reset a minutos de inactividad
         counter_millis = 0;                                                                  // reseteamos el counter_millis para anular el reseteo por inacctividad
       }                                                                                      // actualizamos pantalla con nuevos valores
       Serial.println("Aforo: " + String(BDatos.aforo) + "  Total: " + String(BDatos.total)); // entro
     }
     last_value = BDatos.total;
   }
-
 }
 
 //===============================================================================================================================================
@@ -164,25 +158,17 @@ void reinicio_de_cuenta()
 unsigned long int PrevMillis = 0;
 void envioDataRealtime()
 {
-  if (millis() < 2000)
-    PrevMillis = 0; // protección frente a desborde de millis
-  if ((Firebase.ready() && (millis() - PrevMillis > (readStringFromEEPROM(240).toInt() * 1000))) && (counter_millis > 5000))
-  {
-    Serial.println(">>> Enviando datos RealTime >>>");
-    PrevMillis = millis();
-    //   int integer = 0;
-    //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
-    //   Serial.println(integer);
-    //  FirebaseJson jVal;
-    //  Serial.printf("Get json ref... %s\n", Firebase.RTDB.getJSON(&fbdo, "/tasa/callao/bano-varones/config", &jVal) ? jVal.raw() : fbdo.errorReason().c_str());
-    jsonData.clear();
-    jsonData.set("total", BDatos.total);
-    jsonData.set("ingresos", BDatos.ingresos);
-    jsonData.set("egresos", BDatos.egresos);
-    jsonData.set("excesos", BDatos.excesos);
-    Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, path_data + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
-
-  }
+  //   int integer = 0;
+  //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
+  //   Serial.println(integer);
+  //  FirebaseJson jVal;
+  //  Serial.printf("Get json ref... %s\n", Firebase.RTDB.getJSON(&fbdo, "/tasa/callao/bano-varones/config", &jVal) ? jVal.raw() : fbdo.errorReason().c_str());
+  jsonData.clear();
+  jsonData.set("total", BDatos.total);
+  jsonData.set("ingresos", BDatos.ingresos);
+  jsonData.set("egresos", BDatos.egresos);
+  jsonData.set("excesos", BDatos.excesos);
+  Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNodeAsync(&fbdo, path_data + fbdo.pushName(), &jsonData) ? "ok" : fbdo.errorReason().c_str());
 }
 
 time_t getNtpTime()
@@ -294,7 +280,7 @@ void setup()
       Serial.println(">>> Estableciendo datos por defecto en Firebase");
       jsonConfigDataSetFirstStart(); // si  no estan escritos primero crea los datos en la nube
       Serial.println("<<< Grabando datos en memoria");
-      setCofigEprom();     // luego los lee y guarda en eeprom
+      setCofigEprom(); // luego los lee y guarda en eeprom
     }
     else
     {
@@ -320,6 +306,10 @@ void setup()
   //--------------- CLOCK NTP SERVER ----------------
   setSyncProvider(getNtpTime);
   setSyncInterval(300);
+
+  // --------------- ENVIO DE CONFIGURACIÓN DE CONTEO AL ARDUINO ------- @on@medium@32@0@3.5@200@
+  Serial.println('@' + readStringFromEEPROM(220) + '@' + readStringFromEEPROM(200) + '@' + readStringFromEEPROM(190) + '@' + String(BDatos.total) + '@' + readStringFromEEPROM(230) + '@' + readStringFromEEPROM(210) + '@');
+  //                        estado                                  abcd                        aforo                        total       inactivity hours reset             count delay milisegundos
 }
 
 int inicio_r = 0;
@@ -328,8 +318,18 @@ unsigned int refresh = 0; // variable para enviar datos cada 2 segundos, sistema
 void loop()
 {
   reinicio_de_cuenta(); // reinicio a 0 de ingresos, egresos y total cuando ocurre un nuevo día.
-  envioDataRealtime();  // envio de data realtime
-  actualizarConfigFlash();
+  if (millis() < 2000)
+    PrevMillis = 0; // protección frente a desborde de millis
+  if ((Firebase.ready() && (millis() - PrevMillis > (readStringFromEEPROM(240).toInt() * 1000))) && (counter_millis > 1000))
+  {
+    PrevMillis = millis();
+    Serial.println(">>> Enviando datos RealTime >>>");
+    envioDataRealtime(); // envio de data realtime
+    Serial.println("<<< Recibiendo data config Realtime <<<");
+    actualizarConfigFlash();
+  }
+  //envioDataRealtime(); // envio de data realtime
+  //actualizarConfigFlash();
   GetUDP_Packet(false); // esperar a que llegen paquetes
 
   listenPeopleCounting();
@@ -346,12 +346,12 @@ void loop()
     counter_millis++;
     // Serial.println("Segundos transcurridos: " + String(counter_millis));
   }
-  if (counter_millis >= (3600000 * horas_inactividad_max))
-  { //(60000*horas_inactividad_max)    60000 = 1min    1hora(60min)= 3600000
-    BDatos.total = 0;
-    counter_millis = 0;
-    Serial.println("Reseteo del total por tiempo de innactividad");
-  }
+  // if (counter_millis >= (3600000 * horas_inactividad_max))
+  // { //(60000*horas_inactividad_max)    60000 = 1min    1hora(60min)= 3600000
+  //   BDatos.total = 0;
+  //   counter_millis = 0;
+  //   Serial.println("Reseteo del total por tiempo de innactividad");
+  // }
 
   if (inicio_r == 0) // condicional puesta el setear datos cuando cualquiera de las 2 puertas se apaga repentinamente
   {
@@ -359,16 +359,16 @@ void loop()
     // actualizar_pantalla();
     mandar_data_display(); //<<<<<<<<
     // BDatos.estado_inicial = 1;                      //salimos del estado incial
-    SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
+    SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos + '|' + BDatos.excesos + '|');
     BDatos.estado_inicial = 1; // salimos del estado incial
   }
 
-  if (flag_send_data == 1) // condicional para enviar datos iniciales
+  if (flag_send_data == 1) // condicional para enviar datos al second port (si esta configurado)
   {
     flag_send_data = 0;
-    SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
+    SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos + '|' + BDatos.excesos + '|');
     ////////////////////////////// ENVIO DE DATOS AL DASHBOARD //////////////////////////////
-    SendUDP_Packet_Dashboard(String() + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
+    // SendUDP_Packet_Dashboard(String() + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
     mandar_data_display(); //<<<<<<<<
     Serial.println("Datos Enviados");
   }
@@ -408,12 +408,12 @@ void loop()
   //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
   //   Serial.println(integer);
   // }
-  
-  
+
   refresh++;
-  if (refresh == 65000)
+  if (refresh == 80000)
   {
     refresh = 0;
     flag_send_data = 1;
+    Serial.println('@' + readStringFromEEPROM(220) + '@' + readStringFromEEPROM(200) + '@' + readStringFromEEPROM(190) + '@' + String(BDatos.total) + '@' + readStringFromEEPROM(230) + '@' + readStringFromEEPROM(210) + '@'); // envio recurente de parametros de configuración
   }
 }

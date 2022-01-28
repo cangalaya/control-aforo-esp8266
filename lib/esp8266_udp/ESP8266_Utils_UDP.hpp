@@ -32,13 +32,13 @@ void SendUDP_Packet(String content)
 	UDP.endPacket();
 }
 
-void SendUDP_Packet_Dashboard(String content)
-{
-	Serial.println("Enviando a Dataloger " + String(remoteIP_dashboard[0])+ "." + String(remoteIP_dashboard[1])+ "." + String(remoteIP_dashboard[2])+ "." + String(remoteIP_dashboard[3])+ " : " + String(remotePortDashboard));
-  UDP.beginPacket(remoteIP_dashboard, remotePortDashboard);
-  UDP.write(content.c_str());
-  UDP.endPacket();
-}
+// void SendUDP_Packet_Dashboard(String content)
+// {
+// 	Serial.println("Enviando a Dataloger " + String(remoteIP_dashboard[0])+ "." + String(remoteIP_dashboard[1])+ "." + String(remoteIP_dashboard[2])+ "." + String(remoteIP_dashboard[3])+ " : " + String(remotePortDashboard));
+//   UDP.beginPacket(remoteIP_dashboard, remotePortDashboard);
+//   UDP.write(content.c_str());
+//   UDP.endPacket();
+// }
 
 void GetUDP_Packet(bool sendACK = true)
 {
