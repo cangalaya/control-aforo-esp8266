@@ -73,6 +73,59 @@ unsigned long counter_millis = 0;
 //=================================================================================================================================================
 //============================================================== R U T I N E S ====================================================================
 //=================================================================================================================================================
+// Function para registro de datos en Firebase Firestore
+unsigned long dataMillis = 0;
+
+void uploadDataFirestore(int logIntervalMin = 60)
+{
+  if (millis() < 500) dataMillis = 0; // si si millis desborda aprox 50d, recuperamos dataMillis
+  if (Firebase.ready() && ( (millis() - dataMillis > (logIntervalMin * 60000)) || dataMillis == 0))
+  {
+    dataMillis = millis();
+    // count++;
+
+    Serial.print("Commit a document (append array)... ");
+
+    // The dyamic array of write object fb_esp_firestore_document_write_t.
+    std::vector<struct fb_esp_firestore_document_write_t> writes;
+
+    // A write object that will be written to the document.
+    struct fb_esp_firestore_document_write_t transform_write;
+
+
+    transform_write.type = fb_esp_firestore_document_write_type_transform;
+
+    // Set the document path of document to write (transform)
+    transform_write.document_transform.transform_document_path = String(sede + "/" + nombre_ambiente); //"callao/comedor1"
+
+    // Set a transformation of a field of the document.
+    struct fb_esp_firestore_document_write_field_transforms_t field_transforms; 
+
+    // Set field path to write.
+    field_transforms.fieldPath = String("F" + String(year()) + "_" + String(month()) + "_" + String(day()));      // fecha ejemplo de formato -> F2022_1_28
+
+    field_transforms.transform_type = fb_esp_firestore_transform_type_append_missing_elements;
+
+    FirebaseJson content;
+
+    content.set("values/[0]/stringValue", String( String(hour()) + ":" + String(minute()) + "_" + readStringFromEEPROM(190) + "_" + String(BDatos.total) + "_" + String(BDatos.ingresos) + "_" + String(BDatos.egresos) + "_" + String(BDatos.excesos) ));       // registro histórico, ejemplo de formato 3:41_32_23_43_12_5 (hora_aforo_total_ingresos_egresos_excesos)
+    //                                                                                                      aforo         
+    // Set the transformation content.
+    field_transforms.transform_content = content.raw();
+
+    // Add a field transformation object to a write object.
+    transform_write.document_transform.field_transforms.push_back(field_transforms);
+
+    // Add a write object to a write array.
+    writes.push_back(transform_write);
+
+    if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
+      Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+    else
+      Serial.println(fbdo.errorReason());
+  }
+}
+
 // Subrutina para el sensado de personas al salir o entrar || incluye filtro ABDC  || Modifica los valores de BDatos
 String mensaje = "";
 void listenPeopleCounting()
@@ -110,7 +163,7 @@ void listenPeopleCounting()
       Serial.print("salio | ");  // salio
       if (BDatos.total - 1 >= 0) // protección para que no adopte valores negativos
       {
-        //BDatos.total--;
+        // BDatos.total--;
         BDatos.egresos++;
         // SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
         flag_send_data = 1; // enviamos la data actualizada
@@ -328,11 +381,12 @@ void loop()
     Serial.println("<<< Recibiendo data config Realtime <<<");
     actualizarConfigFlash();
   }
-  //envioDataRealtime(); // envio de data realtime
-  //actualizarConfigFlash();
+  // envioDataRealtime(); // envio de data realtime
+  // actualizarConfigFlash();
   GetUDP_Packet(false); // esperar a que llegen paquetes
 
   listenPeopleCounting();
+  uploadDataFirestore(readStringFromEEPROM(250).toInt()); // upload de datos históricos en el timepo definido
 
   time_millis = millis();
   if (time_millis < 500)
@@ -369,45 +423,9 @@ void loop()
     SendUDP_Packet(String() + BDatos.estado_inicial + '|' + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos + '|' + BDatos.excesos + '|');
     ////////////////////////////// ENVIO DE DATOS AL DASHBOARD //////////////////////////////
     // SendUDP_Packet_Dashboard(String() + BDatos.aforo + '|' + BDatos.total + '|' + BDatos.ingresos + '|' + BDatos.egresos);
-    mandar_data_display(); //<<<<<<<<
+    //mandar_data_display(); //<<<<<<<<
     Serial.println("Datos Enviados");
   }
-
-  // ESCRIBIR EN DATABASE FIRESTORE
-  // if ((Firebase.ready() && (millis() - PrevMillis > 5000)) || PrevMillis == 0)
-  // {
-  //   PrevMillis = millis();
-  //   String timeStamp = String(String(year()) + "-" + String(month()) + "-" + String(day()) + "--" + String(hour()) + "-" + String(minute()));
-  //   Serial.println(timeStamp);
-
-  //   documentPath = "tasa/pisco-sur/comedor-secundario/" + timeStamp;
-
-  //   // If the document path contains space e.g. "a b c/d e f"
-  //   // It should encode the space as %20 then the path will be "a%20b%20c/d%20e%20f"
-
-  //   content.clear();
-  //   content.set("fields/aforo/integerValue", String(BDatos.aforo).c_str());
-  //   content.set("fields/total/integerValue", String(BDatos.total).c_str());
-  //   content.set("fields/egresos/integerValue", String(BDatos.egresos).c_str());
-  //   content.set("fields/ingresos/integerValue", String(BDatos.ingresos).c_str());
-  //   //content.set("fields/excesos/integerValue", String(random(1, 20)).c_str());
-
-  //   Serial.print("Create a document... ");
-
-  //   if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, documentPath.c_str(), content.raw()))
-  //     Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-  //   else
-  //     Serial.println(fbdo.errorReason());
-  // }
-
-  //// OBTENCION DE VALORES INT DE REALTIME FIREBASE EJECUTAR EN INTERVALOS DE HORAS
-  // if ((Firebase.ready() && (millis() - PrevMillis > 5000) || PrevMillis == 0))
-  // {
-  //   PrevMillis = millis();
-  //   int integer = 0;
-  //   Firebase.RTDB.getInt(&fbdo, "/tasa/callao/bano-varones/config/aforo") ? integer = fbdo.to<int>() : Serial.print(fbdo.errorReason().c_str());
-  //   Serial.println(integer);
-  // }
 
   refresh++;
   if (refresh == 80000)

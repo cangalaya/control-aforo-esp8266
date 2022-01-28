@@ -11,6 +11,7 @@ unsigned int aforo_init = 27;
 unsigned int inactivity_hours_reset = 1;
 unsigned int count_dalay_milisegundos = 100;
 unsigned int set_data_realtime_segundos = 5;
+unsigned int logger_interval_minutes = 60;
 String abcd = "low";
 String estado = "on";
 // Configuración Wifi
@@ -164,6 +165,7 @@ void setCofigEprom()
     trataDeDatoString("tarjet", "estado", 220);
     trataDeDatoFloat("tarjet", "inactivity-hours-reset", 230);   // OK flotante
     trataDeDatoInt("tarjet", "set-data-realtime-segundos", 240); // OK
+    trataDeDatoInt("tarjet","logger-interval-minutes", 250 );
   }
   else
   {
@@ -203,6 +205,8 @@ void setCofigEprom()
       writeStringToEEPROM(230, String(inactivity_hours_reset));
     if (EEPROM.read(240) == 255)
       writeStringToEEPROM(240, String(set_data_realtime_segundos));
+    if (EEPROM.read(250) == 255)
+      writeStringToEEPROM(250, String(logger_interval_minutes));
 
     Serial.println("- TARJET:");
     Serial.println("   - aforo init = " + readStringFromEEPROM(190));
@@ -211,6 +215,7 @@ void setCofigEprom()
     Serial.println("   - estado = " + readStringFromEEPROM(220));
     Serial.println("   - inactivity hours reset = " + readStringFromEEPROM(230));
     Serial.println("   - set data realtime segundos = " + readStringFromEEPROM(240));
+    Serial.println("   - logger interval minutes = " + readStringFromEEPROM(250));
   }
 }
 
@@ -224,6 +229,7 @@ void jsonConfigDataSetFirstStart()
   jsonConfigTarjet.add("estado", estado);                                     // falta configurar
   jsonConfigTarjet.add("inactivity-hours-reset", inactivity_hours_reset);
   jsonConfigTarjet.add("set-data-realtime-segundos", set_data_realtime_segundos); // falta configurar
+  jsonConfigTarjet.add("logger-interval-minutes", logger_interval_minutes);
 
   // SETEO DE CONFIGURACIÓN WIFI
   jsonConfigWifi.add("ssid", ssid);
@@ -283,6 +289,7 @@ void jsonConfigDataSet()
   jsonConfigTarjet.add("estado", readStringFromEEPROM(220));                           // falta configurar
   jsonConfigTarjet.add("inactivity-hours-reset", readStringFromEEPROM(230).toFloat());
   jsonConfigTarjet.add("set-data-realtime-segundos", readStringFromEEPROM(240).toInt()); // falta configurar
+  jsonConfigTarjet.add("logger-interval-minutes", readStringFromEEPROM(250).toInt());
 
   // SETEO DE CONFIGURACIÓN WIFI
   jsonConfigWifi.add("ssid", readStringFromEEPROM(0));
