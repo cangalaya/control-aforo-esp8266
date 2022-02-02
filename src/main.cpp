@@ -79,7 +79,7 @@ unsigned long dataMillis = 0;
 void uploadDataFirestore(int logIntervalMin = 60)
 {
   if (millis() < 500) dataMillis = 0; // si si millis desborda aprox 50d, recuperamos dataMillis
-  if (Firebase.ready() && ( (millis() - dataMillis > (logIntervalMin * 60000)) || dataMillis == 0))
+  if (Firebase.ready() && ( (millis() - dataMillis) > (logIntervalMin * 60000) ))
   {
     dataMillis = millis();
     // count++;
