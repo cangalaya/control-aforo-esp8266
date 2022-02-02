@@ -2,13 +2,13 @@ void ConnectWiFi_STA(bool useStaticIP = false)
 {
    Serial.println("");
    WiFi.mode(WIFI_STA);
-   if (EEPROM.read(0) == 255  || EEPROM.read(50) == 255)    // se inicia del sistema y no está grabado nada en memoria
-   {
+   // if ((EEPROM.read(0) == 255 || EEPROM.read(0) == 0)  || (EEPROM.read(50) == 255 ||  EEPROM.read(50)==0))    // se inicia del sistema y no está grabado nada en memoria
+   // {
       Serial.println("-->>> SSID and PASSWORD defauld");
       WiFi.begin(ssid, password);
-   } else {
-      WiFi.begin(readStringFromEEPROM(0), readStringFromEEPROM(50));
-   }
+   // } else {
+   //    WiFi.begin(readStringFromEEPROM(0), readStringFromEEPROM(50));
+   // }
    if(useStaticIP) WiFi.config(ip, gateway, subnet);
     int counter_wifi = 0;
    while (WiFi.status() != WL_CONNECTED) 

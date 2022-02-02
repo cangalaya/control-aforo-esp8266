@@ -6,21 +6,21 @@ IPAddress subnet(255, 255, 255, 0);
 // Configuración Tarjeta
 String cliente = "tasa";
 String sede = "callao";
-String nombre_ambiente = "comedor-prueba5";
-unsigned int aforo_init = 27;
-unsigned int inactivity_hours_reset = 1;
+String nombre_ambiente = "comedor2";
+unsigned int aforo_init = 28;
+unsigned int inactivity_hours_reset = 2;
 unsigned int count_dalay_milisegundos = 100;
 unsigned int set_data_realtime_segundos = 5;
 unsigned int logger_interval_minutes = 60;
-String abcd = "low";
+String abcd = "medium";
 String estado = "on";
 // Configuración Wifi
-String ssid = "WF_P2_2";         // WF_AFORO_SAM
+String ssid = "WF_P2_2";         // WF_AFORO
 String password = "R420437015R"; // ss1d_4FoRo_T4s4
 
 // Configuración UDP
-unsigned int master_port = 8898;
-unsigned int second_port = 8899;
+unsigned int master_port = 8890;
+unsigned int second_port = 8891;
 // unsigned int datalogger_port = 8888;
 // unsigned int datalogger_ip = 20;
 //==================================================
